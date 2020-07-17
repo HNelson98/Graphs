@@ -28,10 +28,78 @@ player = Player(world.starting_room)
 # Fill this out with directions to walk
 # traversal_path = ['n', 'n']
 traversal_path = []
+revTravPath = []
+maze = dict()
+visited_rooms = set()
+revTravDict = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e'}
 
 
 
-# TRAVERSAL TEST
+def getRoomExits(room):
+    #I want to make a dictionary and put the exits for the room in it.
+
+    maze[room.id] = dict()
+    roomExits = room.get_exits()
+
+    for exit in roomExits: 
+        maze[room.id][exit] = '?'
+
+#lets depth first search to go through the map and build it
+def buildMap(room, directions):
+    lastRoom = player.current_room.id
+    newDirection = directions.pop(0)
+
+    player.travel(newDirection)
+
+    newRoomId = player.current_room.id
+    newRoom = player.current_room
+
+    traversal_path.append(newDirection)
+
+    revPath = revTravDict.get(newDirection)
+
+    revTravPath.append(revPath)
+
+    if newRoomId not in maze:
+        getRoomExits(newRoom)
+        maze[lastRoom][newDirection] = newRoomId
+        maze[newRoomId][revPath] = lastRoom
+    else:
+        maze[lastRoom][newDirection] = newRoomId
+
+def backTrack(room):
+    for move in revTravPath[::-1]:
+        player.travel(move)
+        traversal_path.append(move)
+        revTravPath.pop(-1)
+        if "?" in maze[player.current_room.id].values():
+            return
+
+
+
+
+#now to actually run it while the length of maze is smaller than the number of rooms
+while len(maze) < len(room_graph):
+    
+    newRoom = player.current_room
+    if newRoom.id not in maze:
+        getRoomExits(newRoom)
+    unknownPath = []
+    for direction, room in maze[newRoom.id].items():
+        if room == "?":
+            unknownPath.append(direction)
+    if len(unknownPath) > 0:
+        buildMap(newRoom, unknownPath)
+    else:
+        if len(revTravPath) > 0:
+            backTrack(newRoom)
+        else:
+            exits = newRoom.get_exits()
+            leave = random.choice(exits)
+            player.travel(leave)
+
+#TRAVERSAL TEST
+
 visited_rooms = set()
 player.current_room = world.starting_room
 visited_rooms.add(player.current_room)
@@ -51,12 +119,12 @@ else:
 #######
 # UNCOMMENT TO WALK AROUND
 #######
-player.current_room.print_room_description(player)
-while True:
-    cmds = input("-> ").lower().split(" ")
-    if cmds[0] in ["n", "s", "e", "w"]:
-        player.travel(cmds[0], True)
-    elif cmds[0] == "q":
-        break
-    else:
-        print("I did not understand that command.")
+# player.current_room.print_room_description(player)
+# while True:
+#     cmds = input("-> ").lower().split(" ")
+#     if cmds[0] in ["n", "s", "e", "w"]:
+#         player.travel(cmds[0], True)
+#     elif cmds[0] == "q":
+#         break
+#     else:
+#         print("I did not understand that command.")
